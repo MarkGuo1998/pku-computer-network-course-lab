@@ -93,22 +93,22 @@ typedef struct buffer
  */
 int stud_slide_window_stop_and_wait(char *pBuffer, int bufferSize, UINT8 messageType)
 {
-    // 这里为了方便，直接用了STL的队列。
+	// 这里为了方便，直接用了STL的队列。
 	static queue<buffer> sendQueue;
 	static int windowNumber = 0;
     
-    // 分三种情况讨论，第一种是需要发送一个帧。
+	// 分三种情况讨论，第一种是需要发送一个帧。
 	if (messageType == MSG_TYPE_SEND)
 	{
-        // 使用默认构造函数把pBuffer指向的bufferSize个字节缓存起来，并强制转换为frame格式。
-        // 这里也可以使用memcpy函数，但是在后面的任务里要用到ack和seq号（需用ntoh进行转换）。
-        // 那时用memcpy就比较麻烦了。为了统一，我还是使用了结构体的方法。
+		// 使用默认构造函数把pBuffer指向的bufferSize个字节缓存起来，并强制转换为frame格式。
+  		// 这里也可以使用memcpy函数，但是在后面的任务里要用到ack和seq号（需用ntoh进行转换）。
+		// 那时用memcpy就比较麻烦了。为了统一，我还是使用了结构体的方法。
 		buffer tmp(pBuffer, bufferSize);
 		sendQueue.push(tmp);
 
-        // 如果窗口数没达到上限（1），开一个新窗口，并发送队列里的第一帧。
-        // 发送这一帧不意味着将其pop出队！因为可能超时重发，若pop出去，就找不到这一帧了。
-        // 正确的做法是等ACK（RECEIVE）时再出队。
+		// 如果窗口数没达到上限（1），开一个新窗口，并发送队列里的第一帧。
+		// 发送这一帧不意味着将其pop出队！因为可能超时重发，若pop出去，就找不到这一帧了。
+		// 正确的做法是等ACK（RECEIVE）时再出队。
 		if (windowNumber < WINDOW_SIZE_STOP_WAIT)
 		{
 			windowNumber++;
@@ -117,11 +117,11 @@ int stud_slide_window_stop_and_wait(char *pBuffer, int bufferSize, UINT8 message
 		}
 	}
     
-    // 第二种情况是收到一个ACK。我们不必额外验证ack号。
-    // 因为停等协议的发端每次只发一帧，所以收端发回的ACK一定意味着“上一帧正确发送”。
+	// 第二种情况是收到一个ACK。我们不必额外验证ack号。
+	// 因为停等协议的发端每次只发一帧，所以收端发回的ACK一定意味着“上一帧正确发送”。
 	else if (messageType == MSG_TYPE_RECEIVE)
 	{
-        // 确认成功发送一帧，同时关闭一个窗口；根据第一种情况的讨论，需要让一个帧出队。
+  		// 确认成功发送一帧，同时关闭一个窗口；根据第一种情况的讨论，需要让一个帧出队。
 		windowNumber--;
 		sendQueue.pop();
         
